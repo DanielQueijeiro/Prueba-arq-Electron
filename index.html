@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <!-- https://developer.mozilla.org/en-US/docs/Web/HTTP/CSP -->
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self'"
+    />
+    <meta
+      http-equiv="X-Content-Security-Policy"
+      content="default-src 'self'; script-src 'self'"
+    />
+    <link rel='stylesheet' href='styles.css'>
+    <title>Harvester</title>
+  </head>
+  <body>
+
+    <div class='container'>
+      <div class='header'>
+        <h1>Harvester</h1>
+        <p>Carga un archivo Excel para generar un gráfico</p>
+      </div>
+
+      <div class="actions">
+        <button id="excelBtn">Seleccionar archivo Excel</button>
+        <button id="pdfBtn" disabled>Guardar como PDF</button>
+      </div>
+
+      <div class="file-info">
+        <p id="fileName">Ningún archivo seleccionado</p>
+      </div>
+
+      <div class="chart-container">
+        <canvas id="myChart" width="400" height="400"></canvas>
+      </div>
+    </div>
+
+    <script src="./node_modules/jspdf/dist/jspdf.umd.min.js"></script>
+    <script src="./node_modules/jspdf-autotable/dist/jspdf.plugin.autotable.min.js"></script>
+    <script src="./node_modules/chart.js/dist/chart.umd.js"></script>
+    <script defer src="./renderer.js"></script>
+  </body>
+</html>
