@@ -1,8 +1,8 @@
 <!DOCTYPE html>
-<html>
+<html lang="es">
   <head>
     <meta charset="UTF-8">
-    <!-- https://developer.mozilla.org/en-US/docs/Web/HTTP/CSP -->
+    <!-- Política de seguridad de contenido -->
     <meta
       http-equiv="Content-Security-Policy"
       content="default-src 'self'; script-src 'self'"
@@ -12,33 +12,39 @@
       content="default-src 'self'; script-src 'self'"
     />
     <link rel='stylesheet' href='styles.css'>
-    <title>Harvester</title>
+    <title>Harvester - Visualizador de Datos Excel</title>
   </head>
   <body>
-
+    <!-- Contenedor principal -->
     <div class='container'>
       <div class='header'>
         <h1>Harvester</h1>
-        <p>Carga un archivo Excel para generar un gráfico</p>
+        <p>Carga un archivo Excel para generar un gráfico y exportarlo a PDF</p>
       </div>
 
+      <!-- Sección de acciones -->
       <div class="actions">
-        <button id="excelBtn">Seleccionar archivo Excel</button>
-        <button id="pdfBtn" disabled>Guardar como PDF</button>
+        <button id="excelBtn" aria-label="Seleccionar archivo Excel">Seleccionar archivo Excel</button>
+        <button id="pdfBtn" disabled aria-label="Guardar como PDF">Guardar como PDF</button>
       </div>
 
+      <!-- Información del archivo -->
       <div class="file-info">
         <p id="fileName">Ningún archivo seleccionado</p>
       </div>
 
+      <!-- Contenedor para el gráfico -->
       <div class="chart-container">
-        <canvas id="myChart" width="400" height="400"></canvas>
+        <canvas id="myChart" width="400" height="400" aria-label="Gráfico de datos de Excel" role="img"></canvas>
       </div>
     </div>
 
+    <!-- Scripts externos -->
     <script src="./node_modules/jspdf/dist/jspdf.umd.min.js"></script>
     <script src="./node_modules/jspdf-autotable/dist/jspdf.plugin.autotable.min.js"></script>
     <script src="./node_modules/chart.js/dist/chart.umd.js"></script>
+    
+    <!-- Script principal -->
     <script defer src="./renderer.js"></script>
   </body>
 </html>

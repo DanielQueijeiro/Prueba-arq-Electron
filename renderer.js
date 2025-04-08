@@ -1,95 +1,105 @@
-const subirExcel = document.getElementById('excelBtn');
-const fileNameElement = document.getElementById('fileName');
-const pdfButton = document.getElementById('pdfBtn');
-let chart = null;
-let excelData = null;
+/**
+ * Script del proceso de renderizado
+ * Maneja la interfaz de usuario y la interacción con los archivos Excel y PDF
+ */
 
-window.addEventListener('DOMContentLoaded', () => {
-  console.log('DOM completamente cargado');
-  if (typeof Chart === 'undefined') {
-    console.error('Chart.js no está cargado correctamente');
-  } else {
-    console.log('Chart.js cargado correctamente');
-  }
-  
-  if (typeof window.jspdf === 'undefined' && typeof window.jsPDF === 'undefined') {
-    console.error('jsPDF no está cargado correctamente');
-  } else {
-    console.log('jsPDF cargado correctamente');
-  }
-});
+// Elementos DOM
+const botonSubirExcel = document.getElementById('excelBtn');
+const elementoNombreArchivo = document.getElementById('fileName');
+const botonPDF = document.getElementById('pdfBtn');
 
-subirExcel.addEventListener('click', () => {
-  window.electronAPI.openFileDialog();
-});
+// Variables globales
+let grafico = null;
+let datosExcel = null;
 
-pdfButton.addEventListener('click', () => {
-  if (chart && excelData) {
-    generatePDF(excelData);
-  }
-});
+/**
+ * Valida que las librerías necesarias estén disponibles
+ */
+function validarDependencias() {
+  const dependencias = [
+    { nombre: 'Chart.js', objeto: typeof Chart, mensaje: 'Chart.js no está cargado correctamente' },
+    { nombre: 'jsPDF', objeto: typeof window.jspdf !== 'undefined' || typeof window.jsPDF !== 'undefined', 
+      mensaje: 'jsPDF no está cargado correctamente' }
+  ];
 
-window.electronAPI.onFileSelected((fileData) => {
-  console.log('Archivo seleccionado:', fileData);
-  
-  excelData = fileData.data;
-
-  fileNameElement.textContent = `Archivo seleccionado: ${fileData.fileName}`;
-
-  pdfButton.disabled = false;
-
-  displayDataPreview(fileData.data);
-
-  setTimeout(() => {
-    createChart(fileData.data);
-  }, 100);
-});
-
-function displayDataPreview(data) {
-  if (!data || data.length === 0) return;
-
-  const existingPreview = document.getElementById('dataPreview');
-  if (existingPreview) {
-    existingPreview.remove();
-  }
-
-  const previewContainer = document.createElement('div');
-  previewContainer.id = 'dataPreview';
-  previewContainer.className = 'data-preview';
-
-  const table = document.createElement('table');
-  table.className = 'excel-data-table';
-
-  const maxRows = Math.min(10, data.length);
-  const maxCols = data[0] ? Math.min(5, data[0].length) : 0;
-
-  for (let i = 0; i < maxRows; i++) {
-    const row = document.createElement('tr');
-    
-    for (let j = 0; j < maxCols; j++) {
-      const cell = i === 0 ? document.createElement('th') : document.createElement('td');
-      if (data[i] && data[i][j] !== undefined) {
-        cell.textContent = data[i][j];
-      } else {
-        cell.textContent = '';
-      }
-      row.appendChild(cell);
+  dependencias.forEach(dep => {
+    if (!dep.objeto) {
+      console.error(dep.mensaje);
+      window.electronAPI.mostrarError(dep.mensaje);
+    } else {
+      console.log(`${dep.nombre} cargado correctamente`);
     }
-    
-    table.appendChild(row);
-  }
-
-  const infoText = document.createElement('p');
-  infoText.textContent = `Archivo completo: ${data.length} filas, ${data[0] ? data[0].length : 0} columnas`;
-
-  previewContainer.appendChild(infoText);
-  previewContainer.appendChild(table);
-
-  fileNameElement.parentNode.appendChild(previewContainer);
+  });
 }
 
-function createChart(data) {
-  console.log('Intentando crear gráfico con datos:', data);
+/**
+ * Muestra una vista previa de los datos cargados
+ */
+function mostrarVistaPrevia(datos) {
+  if (!datos || datos.length === 0) {
+    console.warn('No hay datos para mostrar');
+    return;
+  }
+
+  // Eliminar vista previa anterior si existe
+  const vistaExistente = document.getElementById('dataPreview');
+  if (vistaExistente) {
+    vistaExistente.remove();
+  }
+
+  const contenedorVista = document.createElement('div');
+  contenedorVista.id = 'dataPreview';
+  contenedorVista.className = 'data-preview';
+
+  const tabla = document.createElement('table');
+  tabla.className = 'excel-data-table';
+
+  // Límites para la vista previa
+  const maxFilas = Math.min(10, datos.length);
+  const maxColumnas = datos[0] ? Math.min(5, datos[0].length) : 0;
+
+  // Crear filas y celdas
+  for (let i = 0; i < maxFilas; i++) {
+    const fila = document.createElement('tr');
+    
+    for (let j = 0; j < maxColumnas; j++) {
+      const celda = i === 0 ? document.createElement('th') : document.createElement('td');
+      
+      // Validar que el dato exista antes de asignarlo
+      if (datos[i] && datos[i][j] !== undefined) {
+        celda.textContent = datos[i][j];
+      } else {
+        celda.textContent = '';
+      }
+      
+      fila.appendChild(celda);
+    }
+    
+    tabla.appendChild(fila);
+  }
+
+  // Información del archivo
+  const textoInfo = document.createElement('p');
+  textoInfo.textContent = `Archivo completo: ${datos.length} filas, ${datos[0] ? datos[0].length : 0} columnas`;
+
+  contenedorVista.appendChild(textoInfo);
+  contenedorVista.appendChild(tabla);
+
+  elementoNombreArchivo.parentNode.appendChild(contenedorVista);
+}
+
+/**
+ * Crea un gráfico con los datos cargados
+ */
+function crearGrafico(datos) {
+  console.log('Creando gráfico con los datos cargados');
+
+  // Validaciones previas
+  if (!datos || !datos.length) {
+    console.error('No hay datos para crear el gráfico');
+    window.electronAPI.mostrarError('El archivo no contiene datos válidos');
+    return;
+  }
 
   const canvas = document.getElementById('myChart');
   if (!canvas) {
@@ -98,12 +108,13 @@ function createChart(data) {
   }
 
   if (typeof Chart === 'undefined') {
-    console.error('Chart.js no está disponible. Verifica la importación.');
+    console.error('Chart.js no está disponible');
     return;
   }
 
-  if (chart) {
-    chart.destroy();
+  // Destruir gráfico existente si hay uno
+  if (grafico) {
+    grafico.destroy();
   }
   
   try {
@@ -113,20 +124,37 @@ function createChart(data) {
       return;
     }
     
-    const headers = data[0];
-
-    const chartData = data.slice(1);
-
-    const labels = chartData.map(row => row[1]);
-    const values = chartData.map(row => row[0]);
+    // Validar estructura de datos
+    if (!datos[0] || datos[0].length < 2) {
+      console.error('Los datos no tienen el formato esperado (se requieren al menos 2 columnas)');
+      window.electronAPI.mostrarError('El formato de los datos no es compatible con el gráfico');
+      return;
+    }
     
-    chart = new Chart(ctx, {
+    const encabezados = datos[0];
+    const datosGrafico = datos.slice(1);
+
+    // Validar que existan datos además de los encabezados
+    if (datosGrafico.length === 0) {
+      console.error('No hay datos para graficar más allá de los encabezados');
+      window.electronAPI.mostrarError('El archivo no contiene datos para graficar');
+      return;
+    }
+
+    const etiquetas = datosGrafico.map(fila => fila[1]);
+    const valores = datosGrafico.map(fila => {
+      // Asegurar que los valores sean numéricos
+      const valor = parseFloat(fila[0]);
+      return isNaN(valor) ? 0 : valor;
+    });
+    
+    grafico = new Chart(ctx, {
       type: 'bar',
       data: {
-        labels: labels,
+        labels: etiquetas,
         datasets: [{
-          label: headers[0],
-          data: values,
+          label: encabezados[0],
+          data: valores,
           backgroundColor: 'rgba(54, 162, 235, 0.6)',
           borderColor: 'rgba(54, 162, 235, 1)',
           borderWidth: 1
@@ -140,20 +168,20 @@ function createChart(data) {
             beginAtZero: true,
             title: {
               display: true,
-              text: headers[0]
+              text: encabezados[0]
             }
           },
           x: {
             title: {
               display: true,
-              text: headers[1]
+              text: encabezados[1]
             }
           }
         },
         plugins: {
           title: {
             display: true,
-            text: `${headers[0]} por ${headers[1]}`
+            text: `${encabezados[0]} por ${encabezados[1]}`
           }
         }
       }
@@ -162,37 +190,52 @@ function createChart(data) {
     console.log('Gráfico creado correctamente');
   } catch (error) {
     console.error('Error al crear el gráfico:', error);
+    window.electronAPI.mostrarError(`Error al crear el gráfico: ${error.message}`);
   }
 }
 
-function generatePDF(data) {
+/**
+ * Genera un PDF con los datos y el gráfico
+ */
+function generarPDF(datos) {
   try {
+    // Obtener la clase jsPDF
     const jsPDFClass = window.jspdf?.jsPDF || window.jsPDF;
     if (!jsPDFClass) {
       console.error('jsPDF no está disponible');
-      window.electronAPI.showError('jsPDF no está disponible. Verifica la instalación.');
+      window.electronAPI.mostrarError('jsPDF no está disponible. Verifica la instalación.');
       return;
     }
     
+    // Crear documento PDF
     const doc = new jsPDFClass({
       orientation: 'landscape',
       unit: 'mm',
       format: 'a4'
     });
     
+    // Añadir encabezado
     doc.setFontSize(16);
     doc.text("Reporte de Datos", 14, 15);
     
-    const currentDate = new Date().toLocaleDateString();
+    // Añadir fecha
+    const fechaActual = new Date().toLocaleDateString();
     doc.setFontSize(10);
-    doc.text(`Fecha: ${currentDate}`, 14, 22);
+    doc.text(`Fecha: ${fechaActual}`, 14, 22);
     
-    const headers = data[0];
-    const tableData = data.slice(1);
+    // Validar datos para la tabla
+    if (!datos || !datos.length || !datos[0]) {
+      window.electronAPI.mostrarError('No hay datos válidos para generar el PDF');
+      return;
+    }
 
+    const encabezados = datos[0];
+    const datosTabla = datos.slice(1);
+
+    // Generar tabla
     doc.autoTable({
-      head: [headers],
-      body: tableData,
+      head: [encabezados],
+      body: datosTabla,
       startY: 30,
       theme: 'grid',
       styles: {
@@ -206,39 +249,85 @@ function generatePDF(data) {
       }
     });
     
+    // Nueva página para el gráfico
     doc.addPage();
 
     doc.setFontSize(16);
-    doc.text(`Gráfico: ${headers[0]} por ${headers[1]}`, 14, 15);
+    doc.text(`Gráfico: ${encabezados[0]} por ${encabezados[1]}`, 14, 15);
 
+    // Obtener imagen del gráfico
     const canvas = document.getElementById('myChart');
     if (!canvas) {
       console.error('No se encuentra el elemento canvas');
+      window.electronAPI.mostrarError('No se pudo encontrar el gráfico para incluirlo en el PDF');
       return;
     }
 
-    const chartImage = canvas.toDataURL('image/png', 1.0);
+    const imagenGrafico = canvas.toDataURL('image/png', 1.0);
 
-    const pageWidth = doc.internal.pageSize.getWidth();
-    const pageHeight = doc.internal.pageSize.getHeight();
-    const chartWidth = pageWidth - 30;
-    const chartHeight = chartWidth * (canvas.height / canvas.width);
+    // Calcular dimensiones para mantener proporciones
+    const anchoHoja = doc.internal.pageSize.getWidth();
+    const altoHoja = doc.internal.pageSize.getHeight();
+    const anchoGrafico = anchoHoja - 30;
+    const altoGrafico = anchoGrafico * (canvas.height / canvas.width);
 
-    doc.addImage(chartImage, 'PNG', 15, 25, chartWidth, chartHeight);
+    // Añadir imagen del gráfico al PDF
+    doc.addImage(imagenGrafico, 'PNG', 15, 25, anchoGrafico, altoGrafico);
 
-    window.electronAPI.savePDF((filePath) => {
-      if (filePath) {
+    // Guardar el PDF
+    window.electronAPI.guardarPDF((rutaArchivo) => {
+      if (rutaArchivo) {
         const pdfBlob = doc.output('blob');
-        const reader = new FileReader();
-        reader.onload = () => {
-          window.electronAPI.writePDFFile(filePath, reader.result);
+        const lector = new FileReader();
+        lector.onload = () => {
+          window.electronAPI.escribirArchivoPDF(rutaArchivo, lector.result);
         };
-        reader.readAsArrayBuffer(pdfBlob);
+        lector.readAsArrayBuffer(pdfBlob);
       }
     });
     
   } catch (error) {
     console.error('Error al generar el PDF:', error);
-    window.electronAPI.showError(`Error al generar el PDF: ${error.message}`);
+    window.electronAPI.mostrarError(`Error al generar el PDF: ${error.message}`);
   }
 }
+
+// Event Listeners
+window.addEventListener('DOMContentLoaded', validarDependencias);
+
+botonSubirExcel.addEventListener('click', () => {
+  window.electronAPI.abrirDialogoArchivo();
+});
+
+botonPDF.addEventListener('click', () => {
+  if (grafico && datosExcel) {
+    generarPDF(datosExcel);
+  } else {
+    window.electronAPI.mostrarError('No hay datos o gráfico para generar el PDF');
+  }
+});
+
+// Escuchar el evento de archivo seleccionado
+window.electronAPI.enArchivoSeleccionado((datosArchivo) => {
+  console.log('Archivo seleccionado:', datosArchivo.nombreArchivo);
+  
+  // Validar datos recibidos
+  if (!datosArchivo || !datosArchivo.datos || !Array.isArray(datosArchivo.datos)) {
+    window.electronAPI.mostrarError('El archivo seleccionado no contiene datos válidos');
+    return;
+  }
+  
+  datosExcel = datosArchivo.datos;
+
+  // Actualizar interfaz
+  elementoNombreArchivo.textContent = `Archivo seleccionado: ${datosArchivo.nombreArchivo}`;
+  botonPDF.disabled = false;
+
+  // Mostrar datos y crear gráfico
+  mostrarVistaPrevia(datosArchivo.datos);
+
+  // Usar setTimeout para asegurar que el DOM esté actualizado
+  setTimeout(() => {
+    crearGrafico(datosArchivo.datos);
+  }, 100);
+});

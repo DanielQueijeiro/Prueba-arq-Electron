@@ -1,15 +1,40 @@
-const { contextBridge, ipcRenderer } = require('electron/renderer')
+/**
+ * Módulo de precarga: Establece el puente seguro entre el proceso principal y el renderizador
+ * Expone funcionalidades específicas del sistema a través de contextBridge
+ */
+const { contextBridge, ipcRenderer } = require('electron/renderer');
 
+// Exposición de APIs seguras al proceso de renderizado
 contextBridge.exposeInMainWorld('electronAPI', {
-  openFileDialog: () => ipcRenderer.send('open-file-dialog'),
-  onFileSelected: (callback) => ipcRenderer.on('file-selected', (event, filePath) => callback(filePath)),
-  savePDF: (callback) => {
-    ipcRenderer.send('save-pdf-dialog');
-    ipcRenderer.once('save-pdf-path', (event, filePath) => callback(filePath));
+  /**
+   * Abre el diálogo de selección de archivos Excel
+   */
+  abrirDialogoArchivo: () => ipcRenderer.send('abrir-dialogo-archivo'),
+  
+  /**
+   * Escucha cuando un archivo ha sido seleccionado
+   */
+  enArchivoSeleccionado: (callback) => 
+    ipcRenderer.on('archivo-seleccionado', (event, rutaArchivo) => callback(rutaArchivo)),
+  
+  /**
+   * Inicia el proceso de guardado de PDF
+   */
+  guardarPDF: (callback) => {
+    ipcRenderer.send('dialogo-guardar-pdf');
+    ipcRenderer.once('ruta-guardar-pdf', (event, rutaArchivo) => callback(rutaArchivo));
   },
-  writePDFFile: (filePath, arrayBuffer) => {
+  
+  /**
+   * Guarda un archivo PDF en el sistema
+   */
+  escribirArchivoPDF: (rutaArchivo, arrayBuffer) => {
     const buffer = new Uint8Array(arrayBuffer);
-    ipcRenderer.send('write-pdf-file', filePath, buffer);
+    ipcRenderer.send('escribir-archivo-pdf', rutaArchivo, buffer);
   },
-  showError: (message) => ipcRenderer.send('show-error', message)
-})
+  
+  /**
+   * Muestra un mensaje de error al usuario
+   */
+  mostrarError: (mensaje) => ipcRenderer.send('mostrar-error', mensaje)
+});
